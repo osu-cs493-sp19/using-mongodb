@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const logger = require('./lib/logger');
+const { connectToDB } = require('./lib/mongo');
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -75,6 +76,8 @@ app.use('*', (req, res, next) => {
   });
 });
 
-app.listen(port, () => {
-  console.log("== Server is listening on port:", port);
+connectToDB(() => {
+  app.listen(port, () => {
+    console.log("== Server is listening on port:", port);
+  });
 });
