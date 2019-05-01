@@ -8,32 +8,49 @@ const app = express();
 const port = process.env.PORT || 8000;
 
 const { validateAgainstSchema } = require('./lib/validation');
-const { LodgingSchema } = require('./models/lodging');
+const { LodgingSchema, getLodgingsPage, insertNewLodging } = require('./models/lodging');
 const lodgings = require('./lodgings');
 
 app.use(bodyParser.json());
 
 app.use(logger);
 
-app.get('/lodgings', (req, res) => {
-  res.status(200).send({
-    lodgings: lodgings
-  });
+app.get('/lodgings', async (req, res) => {
+  try {
+    const lodgingsPage = await getLodgingsPage(parseInt(req.query.page) || 1);
+    res.status(200).send(lodgingsPage);
+  } catch (err) {
+    res.status(500).send({
+      error: "Error fetching lodgings.  Try again later."
+    });
+  }
 });
 
-app.post('/lodgings', (req, res) => {
+app.post('/lodgings', async (req, res) => {
   if (validateAgainstSchema(req.body, LodgingSchema)) {
-    lodgings.push(req.body);
-    const id = lodgings.length - 1;
-    res.status(201).send({
-      id: id
-    });
+    try {
+      const id = await insertNewLodging(req.body);
+      res.status(201).send({
+        id: id
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({
+        error: "Failed to insert lodging.  Try again later."
+      });
+    }
   } else {
     res.status(400).send({
       err: "Request body does not contain a valid Lodging."
     });
   }
 });
+
+/*****************************************************************************
+ ** Note that the API endpoints below have not been modified to use MongoDB.
+ ** They only use in-memory/JSON data.  See the course notes for this topic
+ ** for more about how to convert these endpoints to use MongoDB.
+ *****************************************************************************/
 
 app.get('/lodgings/:id', (req, res, next) => {
   const id = req.params.id;
